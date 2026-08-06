@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: "AZ-Eval: a parallel Azerbaijani-English benchmark"
+message: "If you use this benchmark, please cite it as below."
+type: dataset
+authors:
+  - family-names: Garibli
+    given-names: Nihat
+    email: gariblinihat@bsu.edu.az
+    affiliation: Baku State University
+repository-code: "https://github.com/nihatgaribli/az-eval"
+abstract: >-
+  An open parallel Azerbaijani-English benchmark of 96 human-verified
+  short-answer items, with an evaluation pipeline that separates knowledge
+  from orthography through a chain of nested normalizations. Used to show
+  that fine-tuning on Kazakh produces negative transfer to Azerbaijani,
+  with a largely orthographic mechanism.
+keywords:
+  - low-resource evaluation
+  - Azerbaijani
+  - cross-lingual transfer
+  - Turkic languages
+  - writing systems
+  - large language models
+license: CC-BY-4.0
+date-released: "2026-08-07"

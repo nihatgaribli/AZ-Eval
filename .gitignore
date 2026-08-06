@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+.env
+
+# LaTeX qalıqları
+*.aux
+*.log
+*.idx
+*.out
+
+# Daxili sənədlər — repoya düşmür
+BRIEF.md
+submit/
+
+# Tezis qaralaması — göndərildikdən sonra əlavə olunacaq
+paper/
