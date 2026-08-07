@@ -216,9 +216,29 @@ def gold_answers(record: dict[str, Any], language: str) -> list[str]:
     yoxdur. Bu asimmetriya QƏSDƏNdir və hesabatda göstərilməlidir: AZ tərəfə bir
     az əlverişlidir, yəni ölçülən AZ/EN fərqi əsl fərqin AŞAĞI həddidir.
     """
+    azerbaijani = str(record.get("answer", ""))
+    english = str(record.get("answer_en", ""))
+
     if language == "az":
-        return [record["answer"], *(record.get("answer_aliases") or [])]
-    return [record["answer_en"]]
+        return [azerbaijani, *(record.get("answer_aliases") or [])]
+
+    # İngilis etalonu AZ-dən UZUNDURSA, ayrı-ayrı sözləri də qəbul edilir.
+    #
+    # Wikidata etiket konvensiyaları iki dildə fərqlidir və asimmetriya hər iki
+    # istiqamətdə baş verir. AZ tərəfin uzun olduğu hal `build_dataset
+    # .equivalence_aliases` ilə datasetdə həll olunur; burada TƏRSİ tutulur:
+    #
+    #     AZ "futbolçu"  vs  EN "association football player"
+    #     AZ "Şimalda"   vs  EN "In the North"
+    #
+    # Model ingiliscə "footballer" və ya "North" desə, faktiki olaraq doğrudur,
+    # amma exact match sıfır verər — halbuki azərbaycanca qarşılığı bal alır.
+    # Düzəliş olmasa, ölçülən AZ/EN fərqinin bir hissəsi dildən yox, etiket
+    # konvensiyasından gələr.
+    english_words = english.split()
+    if len(english_words) > max(1, len(azerbaijani.split())):
+        return [english, *english_words]
+    return [english]
 
 
 def score_run(

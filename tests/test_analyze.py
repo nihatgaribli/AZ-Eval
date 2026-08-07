@@ -480,3 +480,44 @@ def test_rq2_labels_the_prompt_style_too():
     ]
     table = build_rq2_table(runs, DATASET, "az")
     assert "b (script)" in table
+
+
+@pytest.mark.parametrize(
+    ("answer_az", "answer_en", "should_accept"),
+    [
+        ("futbolçu", "association football player", "player"),
+        ("Şimalda", "In the North", "North"),
+        ("Armududa", "In armudu glass", "armudu"),
+    ],
+)
+def test_english_golds_accept_their_head_words_when_longer(answer_az, answer_en, should_accept):
+    """Etiket konvensiyası asimmetriyası hər iki istiqamətdə tutulmalıdır.
+
+    AZ tərəfin uzun olduğu hal datasetdə alias ilə həll olunur; burada tərsi —
+    ingilis etalonu uzundursa, ayrı-ayrı sözləri də qəbul edilir. Əks halda
+    ölçülən fərqin bir hissəsi dildən yox, konvensiyadan gələr.
+
+    MƏHDUDİYYƏT: bölmə yalnız MÖVCUD sözləri verir, yeni söz düzəltmir. Model
+    "association football player" əvəzinə "footballer" desə, bal almır — bu,
+    morfoloji törəmədir və qayda əsaslı bölmə onu tuta bilmir.
+    """
+    row = {"answer": answer_az, "answer_en": answer_en, "answer_aliases": []}
+    assert should_accept in gold_answers(row, "en")
+
+
+def test_english_head_word_split_does_not_invent_derived_forms():
+    # Sənədləşdirilmiş məhdudiyyət: "footballer" tutulmur.
+    row = {"answer": "futbolçu", "answer_en": "association football player",
+           "answer_aliases": []}
+    assert "footballer" not in gold_answers(row, "en")
+
+
+def test_english_gold_stays_single_when_not_longer():
+    row = {"answer": "Bakı", "answer_en": "Baku", "answer_aliases": []}
+    assert gold_answers(row, "en") == ["Baku"]
+
+
+def test_english_head_words_do_not_leak_into_azerbaijani():
+    row = {"answer": "futbolçu", "answer_en": "association football player",
+           "answer_aliases": ["futbolçunun"]}
+    assert gold_answers(row, "az") == ["futbolçu", "futbolçunun"]

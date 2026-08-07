@@ -6,6 +6,7 @@ import pytest
 
 from src.metrics import (
     LENIENT,
+    MODES,
     TRANSLIT,
     MORPH,
     STRICT,
@@ -450,3 +451,44 @@ def test_holm_can_reverse_a_marginal_result():
 
 def test_holm_on_empty_input():
     assert holm_correction([]) == []
+
+
+# --------------------------------------------------------------------------
+# Vahid simvolları: dərəcə işarəsi və alt indekslər
+# --------------------------------------------------------------------------
+
+
+def test_degree_symbol_spacing_does_not_break_match():
+    """`100 °C` ilə `100°C` eyni cavabdır.
+
+    `°` Unicode-da `So` kateqoriyasındadır, `P` deyil. Yalnız `P`
+    təmizlənsəydi, tokenlər `['100','°c']` ilə `['100°c']` kimi
+    ayrılar və doğru cavab səhv sayılardı.
+    """
+    for mode in MODES:
+        assert exact_match("100 °C", "100°C", mode) == 1.0
+        assert exact_match("0 °C", "0°C", mode) == 1.0
+
+
+def test_subscripts_fold_to_ascii_digits():
+    """NFKC `N₂` -> `N2`. Modellər formulları hər iki cür yazır."""
+    for mode in MODES:
+        assert exact_match("N2", "N₂", mode) == 1.0
+        assert exact_match("H2O", "H₂O", mode) == 1.0
+
+
+def test_symbol_folding_does_not_merge_distinct_answers():
+    """Simvol qatlanması FƏRQLİ cavabları eyniləşdirməməlidir."""
+    assert exact_match("100 °C", "0 °C", LENIENT) == 0.0
+    assert exact_match("N2", "O2", LENIENT) == 0.0
+
+
+def test_azerbaijani_letters_survive_nfkc():
+    """NFKC azərbaycan hərflərinə toxunmamalıdır.
+
+    Xüsusən `İ` (nöqtəli böyük I) parçalanıb `I` + birləşən nöqtəyə
+    çevrilsəydi, nöqtəsiz `I` ilə qarışardı — bu isə datasetdə artıq bir dəfə
+    səhvə səbəb olub.
+    """
+    for char in "əğıİöşüÇŞƏĞÖÜI":
+        assert normalize(char, STRICT) == az_lower(char)
