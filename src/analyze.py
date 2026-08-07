@@ -386,6 +386,16 @@ def build_modes_table(
     )
 
 
+#: NƏZARƏT qatı: modelin ingiliscə nümayişkaranə bildiyi faktlar.
+#:
+#: RQ2-nin təmiz ölçüsü buradadır. Azərbaycana xas suallarda hər iki model
+#: uğursuz olur (bilik yoxluğu), ona görə onlar fərqi SEYRƏLDİR və ümumi rəqəm
+#: effekti olduğundan kiçik göstərir. Nəzarət qatında isə ingilis balları
+#: üst-üstə düşür, yəni ümumi qabiliyyət fərqi istisna olunur və azərbaycanca
+#: qalan fərq yalnız dilə aid ola bilər.
+CONTROL_CATEGORIES: frozenset[str] = frozenset({"world", "science"})
+
+
 def _paired(
     run_a: Run,
     run_b: Run,
@@ -393,8 +403,11 @@ def _paired(
     mode: NormalizationConfig,
     metric: str,
     seed: int,
+    categories: frozenset[str] | None = None,
 ):
     ids = sorted(run_a.ids & run_b.ids & set(dataset))
+    if categories is not None:
+        ids = [i for i in ids if dataset[i].get("category") in categories]
     if not ids:
         return None, []
     a = _column(score_run(run_a, dataset, mode, ids), metric, ids)
@@ -503,6 +516,55 @@ def build_rq2_table(
         return f"_`{language}` dilində müqayisə üçün ən azı iki model lazımdır._"
     return _table_with_holm(
         ["Model A", "Model B", "Rejim", "N", "A EM", "B EM", "Fərq"], rows
+    )
+
+
+def build_control_table(
+    runs: Sequence[Run],
+    dataset: dict[str, dict[str, Any]],
+    seed: int = 0,
+) -> str:
+    """RQ2, yalnız NƏZARƏT qatında — işin ən təmiz ölçüsü.
+
+    Ümumi RQ2 rəqəmi Azərbaycana xas suallarla seyrəlir: orada hər iki model
+    uğursuzdur, ona görə aralarındakı fərq kiçilir. Bu cədvəl ölçünü yalnız
+    modelin ingiliscə bildiyi faktlarla aparır.
+
+    İNGİLİS sətri təsadüfi əlavə deyil, TƏLƏBDİR: o, "bəlkə qazax modeli sadəcə
+    zəifdir?" etirazına cavabdır. İngilis balları statistik olaraq fərqlənmirsə,
+    azərbaycanca qalan fərq ümumi qabiliyyətdən gələ bilməz.
+    """
+    rows: list[list[Any]] = []
+    for language in ("en", "az"):
+        same = [r for r in runs if r.key.language == language]
+        for i, run_a in enumerate(same):
+            for run_b in same[i + 1 :]:
+                for mode in MODES:
+                    if language == "en" and mode is not STRICT:
+                        continue  # ingilis tərəfdə rejimlərin təsiri sıfırdır
+                    result, ids = _paired(
+                        run_a, run_b, dataset, mode, "em", seed, CONTROL_CATEGORIES
+                    )
+                    if result is None:
+                        continue
+                    rows.append(
+                        [
+                            language.upper(),
+                            run_label(run_a.key),
+                            run_label(run_b.key),
+                            mode.name,
+                            len(ids),
+                            f"{100 * result.mean_a:.1f}%",
+                            f"{100 * result.mean_b:.1f}%",
+                            f"{100 * result.diff:.1f}pp",
+                            result.p_value,
+                            "bəli" if result.significant else "xeyr",
+                        ]
+                    )
+    if not rows:
+        return "_Nəzarət qatı boşdur._"
+    return _table_with_holm(
+        ["Dil", "Model A", "Model B", "Rejim", "N", "A EM", "B EM", "Fərq"], rows
     )
 
 
@@ -669,6 +731,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "rq2.md": (
             "RQ2 — modellərarası müqayisə (AZ)",
             build_rq2_table(runs, dataset, "az", args.seed),
+        ),
+        "control.md": (
+            "RQ2 nəzarət qatında (world + science) — ən təmiz ölçü",
+            build_control_table(runs, dataset, args.seed),
         ),
         "breakdown.md": (
             "Kateqoriya üzrə kəsim",
