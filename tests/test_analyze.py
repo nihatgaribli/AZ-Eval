@@ -7,12 +7,14 @@ import json
 import pytest
 
 from src.analyze import (
+    CONTROL_CATEGORIES,
     Run,
     RunKey,
     build_breakdown_table,
     build_main_table,
     build_modes_table,
     build_rq1_table,
+    build_control_table,
     build_rq2_table,
     error_rows,
     extract_answer,
@@ -521,3 +523,57 @@ def test_english_head_words_do_not_leak_into_azerbaijani():
     row = {"answer": "futbolçu", "answer_en": "association football player",
            "answer_aliases": ["futbolçunun"]}
     assert gold_answers(row, "az") == ["futbolçu", "futbolçunun"]
+
+
+# --------------------------------------------------------------------------
+# Nəzarət qatı — RQ2-nin ən təmiz ölçüsü
+# --------------------------------------------------------------------------
+
+CONTROL_DATASET = {
+    "az-001": record("az-001", "Bakı", "Baku", category="world"),
+    "az-002": record("az-002", "Gəncə", "Ganja", category="science"),
+    "az-003": record("az-003", "Şəki", "Sheki", category="history"),
+    "az-004": record("az-004", "Quba", "Guba", category="mathematics"),
+}
+
+
+def test_control_categories_are_the_two_universal_strata():
+    """Nəzarət qatı yalnız modelin ingiliscə bildiyi faktlardan ibarətdir."""
+    assert CONTROL_CATEGORIES == frozenset({"world", "science"})
+
+
+def test_control_table_ignores_azerbaijan_specific_rows():
+    """N sütunu 4 yox, 2 olmalıdır: `history` və `mathematics` kənarda qalır."""
+    runs = [
+        make_run("baza", "az", {i: "səhv" for i in CONTROL_DATASET}),
+        make_run("qolda", "az", {i: "səhv" for i in CONTROL_DATASET}),
+    ]
+    table = build_control_table(runs, CONTROL_DATASET)
+    body = [line for line in table.splitlines() if line.startswith("| AZ")]
+    assert body, table
+    for line in body:
+        assert line.split("|")[5].strip() == "2"
+
+
+def test_control_table_reports_both_languages():
+    """İngilis sətri olmasa cədvəl öz məqsədini itirir: o, ümumi qabiliyyət
+    fərqinin olmadığını göstərən nəzarətdir."""
+    runs = [
+        make_run("baza", "az", {"az-001": "Bakı", "az-002": "Gəncə"}),
+        make_run("qolda", "az", {"az-001": "səhv", "az-002": "səhv"}),
+        make_run("baza", "en", {"az-001": "Baku", "az-002": "Ganja"}),
+        make_run("qolda", "en", {"az-001": "Baku", "az-002": "Ganja"}),
+    ]
+    table = build_control_table(runs, CONTROL_DATASET)
+    assert "| EN" in table
+    assert "| AZ" in table
+
+
+def test_control_table_handles_empty_stratum():
+    """Nəzarət kateqoriyası olmayan datasetdə çökməməlidir."""
+    only_history = {"az-003": CONTROL_DATASET["az-003"]}
+    runs = [
+        make_run("baza", "az", {"az-003": "Şəki"}),
+        make_run("qolda", "az", {"az-003": "səhv"}),
+    ]
+    assert "boşdur" in build_control_table(runs, only_history)

@@ -6,11 +6,13 @@ models, together with the evaluation pipeline that produced it.
 > **Headline finding.** Fine-tuning on Kazakh, the closest well-resourced Turkic
 > relative of Azerbaijani, produces *negative* transfer: `issai/Qolda-AVL-5B` scores
 > **3.1%** exact match on Azerbaijani against **16.6%** for its own base model
-> `Qwen/Qwen3-VL-4B-Instruct` (Holm-corrected *p* = 0.0024). The mechanism is largely
-> orthographic — **326 of 356** Azerbaijani answers come back in Cyrillic, several in
-> Kazakh outright, against **1 of 356** for the base model. Transliteration recovers
-> most of the deficit (13.5 → 5.9 points) but not all of it: the model keeps much of
-> the knowledge and loses the script.
+> `Qwen/Qwen3-VL-4B-Instruct` (Holm-corrected *p* = 0.0024). On the items both models
+> demonstrably know in English the two are **indistinguishable in English** (59.4% vs
+> 59.4%, *p* = 1.0000) yet **35.4 points apart in Azerbaijani**, so the loss cannot be a
+> general capability difference. The mechanism is largely orthographic — **326 of 356**
+> Azerbaijani answers come back in Cyrillic, several in Kazakh outright, against **1 of
+> 356** for the base model. Transliteration recovers most of the deficit but not all of
+> it: the model keeps much of the knowledge and loses the script.
 
 Azerbaijani is a Turkic language written in Latin script. To our knowledge no open
 parallel evaluation set for it existed before this one.
@@ -43,6 +45,28 @@ Majority-class baseline: **1.1%**.
 
 Transliteration removes **56%** of the deficit. The remainder stays significant, so
 script is the largest single cause but not the only one.
+
+### The same comparison on the control stratum
+
+The 96 `world` and `science` items are facts every model demonstrably knows in English.
+Restricting to them removes the Azerbaijan-specific questions that neither model can
+answer, and the contrast sharpens:
+
+| Language | Base | Kazakh-tuned | Gap | *p* (Holm) |
+|---|---|---|---|---|
+| **English** | 59.4% | 59.4% | **0.0 pt** | 1.0000 |
+| Azerbaijani, `STRICT` | 45.8% | 10.4% | **35.4 pt** | **0.0030** |
+| Azerbaijani, `TRANSLIT` | 46.9% | 33.3% | 13.5 pt | 0.2831 |
+
+The English row is the point. The two models are statistically **indistinguishable** in
+English, so the 35.4-point Azerbaijani gap cannot come from a general capability
+difference. Transliteration recovers 62% of it.
+
+The aggregate table above is reported as primary anyway: at *n* = 96 within a 30-test
+family the transliterated row does not survive Holm correction, and only the full sample
+has the power to show that the post-transliteration residual is non-zero. The two tables
+answer different questions — how large is the effect, and is anything left after
+transliteration. Table: [`results/tables/control.md`](results/tables/control.md).
 
 ### Script of the produced answers (Azerbaijani prompts)
 
@@ -140,7 +164,7 @@ isolated. Morphology contributes at most +1.1 points anywhere, diacritics at mos
 
 ```bash
 pip install -r requirements.txt
-python -m pytest                    # 513 tests
+python -m pytest                    # 517 tests
 
 # harvest draft items from Wikidata (parallel AZ/EN by construction)
 python -m src.harvest_wikidata --per-template 12 --max-per-answer 2
@@ -176,7 +200,7 @@ another GPU-hour.
 | `src/metrics.py` | Normalizations, EM, token F1, bootstrap, paired tests, Holm |
 | `src/run_eval.py` | Model runs; raw outputs only |
 | `src/analyze.py` | Scoring, tables, stratified error sample |
-| `tests/` | 513 tests |
+| `tests/` | 517 tests |
 
 ---
 
