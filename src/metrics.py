@@ -261,14 +261,28 @@ def strip_suffixes(
 
 
 def _strip_punctuation(text: str) -> str:
+    """Durğu işarələrini VƏ simvolları ayırıcıya çevirir.
+
+    Simvollar (`S*` kateqoriyası) da daxildir, çünki əks halda dərəcə işarəsi
+    ətrafındakı boşluq fərqi cavabı səhv edir: qızıl `100 °C`, model `100°C` —
+    eyni cavabdır, amma `°` `So` kateqoriyasındadır və `P` yoxlamasından keçir,
+    nəticədə tokenlər `['100','°c']` ilə `['100°c']` kimi ayrılır.
+
+    `%`, `-`, `#` onsuz da `P*` kateqoriyasındadır; bura `°`, `+`, `=`, `$`
+    kimi `S*` işarələrini əlavə edir.
+    """
     return "".join(
-        " " if unicodedata.category(ch).startswith("P") else ch for ch in text
+        " " if unicodedata.category(ch)[0] in "PS" else ch for ch in text
     )
 
 
 def normalize(text: str, config: NormalizationConfig = STRICT) -> str:
     """Mətni verilmiş rejimə uyğun normallaşdırır."""
-    text = unicodedata.normalize("NFC", text)
+    # NFKC (NFC yox): alt/üst indeksləri adi rəqəmə çevirir — `N₂` -> `N2`,
+    # `H₂O` -> `H2O`. Modellər kimyəvi formulları hər iki cür yazır, fərq
+    # məzmunda deyil. Azərbaycan hərflərinə (ə, ğ, ı, İ, ö, ş, ü) təsiri
+    # yoxdur; `İ` NFKC-də də U+0130 olaraq qalır.
+    text = unicodedata.normalize("NFKC", text)
     if config.lowercase:
         text = az_lower(text)
     if config.strip_punctuation:

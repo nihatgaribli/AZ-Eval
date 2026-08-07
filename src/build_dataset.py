@@ -52,6 +52,8 @@ __all__ = [
     "dataset_stats",
     "fill_aliases",
     "equivalence_aliases",
+    "prepare_manual",
+    "MANUAL_REQUIRED_FIELDS",
     "contains_token_sequence",
 ]
 
@@ -74,8 +76,22 @@ OPTIONAL_FIELDS: tuple[str, ...] = (
     "notes",           # əl yoxlaması zamanı qeydlər
 )
 
+#: `world` qəsdən ayrıca kateqoriyadır, Azərbaycan mövzularının yanında.
+#:
+#: O, NƏZARƏT qrupunu işarələyir: model bu faktları ingiliscə mütləq bilir
+#: (dünya paytaxtları, elementlər), ona görə azərbaycanca uğursuzluq bilik
+#: çatışmazlığı yox, dil emalı problemidir. Azərbaycana xas kateqoriyalarda isə
+#: uğursuzluğa bilik boşluğu da qarışır.
+#:
+#: İki qrupun AZ/EN fərqini müqayisə etmək işin əsas müşahidəsidir, ona görə
+#: bölgü şablon adından çıxarılmaqdansa datada açıq saxlanılır.
+#:
+#: `mathematics` `science`-dən ayrı saxlanılır: riyazi terminologiya azərbaycancada
+#: böyük ölçüdə alınmadır (`triqonometriya`, `inteqral`, `funksional analiz`), yəni
+#: latın qrafikasına daha yaxındır. Ümumi elm suallarından ayrı ölçülməsə, bu qat
+#: `science` sütununa qarışır və yazı sistemi effektini süni olaraq zəiflədir.
 CATEGORIES: frozenset[str] = frozenset(
-    {"history", "geography", "science", "culture", "language"}
+    {"history", "geography", "science", "culture", "language", "world", "mathematics"}
 )
 
 #: Yalnız "human" yekun datasetə keçir. `rejected` sətirlər SİLİNMİR — saxlanılır,
@@ -669,6 +685,99 @@ def fill_aliases(
     return updated, filled
 
 
+#: Əl ilə sual yazarkən doldurulması TƏLƏB OLUNAN sahələr. Qalanları
+#: `prepare` əmri avtomatik hesablayır — ona görə əl işi altı sahə ilə bitir.
+MANUAL_REQUIRED_FIELDS: tuple[str, ...] = (
+    "question_az",
+    "question_en",
+    "answer",
+    "answer_en",
+    "category",
+    "source",
+)
+
+
+def prepare_manual(
+    records: Sequence[dict[str, Any]], start_id: int = 1
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Əl ilə yazılmış sətirləri tam sxemə tamamlayır.
+
+    Avtomatik doldurulan sahələr:
+      `id`             ardıcıl nömrələmə
+      `answer_aliases` morfoloji generasiya (`src.morphology`)
+      `provenance`     "manual"
+      `verified_by`    "human" — sualı müəllif özü yazıb, yəni onsuz da yoxlanılıb
+      `difficulty`     verilməyibsə "medium"
+      `notes`          verilməyibsə boş
+
+    Qaytarır: (tamamlanmış sətirlər, problem mesajları). Problem varsa sətir
+    yenə də qaytarılır ki, istifadəçi hamısını bir dəfəyə görüb düzəltsin.
+    """
+    prepared: list[dict[str, Any]] = []
+    problems: list[str] = []
+
+    for offset, raw in enumerate(records):
+        row = dict(raw)
+        position = offset + 1
+
+        missing = [f for f in MANUAL_REQUIRED_FIELDS if _is_blank(row.get(f))]
+        if missing:
+            problems.append(f"sətir {position}: doldurulmamış sahə {missing}")
+
+        category = row.get("category")
+        if isinstance(category, str) and category.strip() and category not in CATEGORIES:
+            problems.append(
+                f"sətir {position}: `{category}` kateqoriya deyil; "
+                f"mümkün: {sorted(CATEGORIES)}"
+            )
+
+        row["id"] = f"az-{start_id + offset:03d}"
+        row.setdefault("difficulty", "medium")
+        row.setdefault("notes", "")
+        row["provenance"] = "manual"
+        row["verified_by"] = "human"
+
+        answer = row.get("answer")
+        if isinstance(answer, str) and answer.strip():
+            existing = row.get("answer_aliases") or []
+            generated = aliases_for(answer)
+            equivalent = equivalence_aliases(answer, str(row.get("answer_en", "")))
+            for form in list(equivalent):
+                equivalent.extend(aliases_for(form))
+            row["answer_aliases"] = list(
+                dict.fromkeys([*existing, *generated, *equivalent])
+            )
+
+        prepared.append(row)
+
+    return prepared, problems
+
+
+def _cmd_prepare(args: argparse.Namespace) -> int:
+    records = [r for _, r in load_jsonl(args.path) if isinstance(r, dict)]
+    if not records:
+        print(f"Fayl boşdur: {args.path}", file=sys.stderr)
+        return 1
+
+    prepared, problems = prepare_manual(records, start_id=args.start_id)
+    for problem in problems:
+        print(f"  {problem}")
+
+    if problems and not args.force:
+        print(f"\n{len(problems)} problem var — fayl YAZILMADI.", file=sys.stderr)
+        print("Düzəlt və yenidən işlət (və ya --force ilə keç).", file=sys.stderr)
+        return 1
+
+    out = args.out or args.path
+    write_jsonl(out, prepared)
+    print(f"{len(prepared)} sətir tamamlandı -> {out}")
+    if prepared:
+        sample = prepared[0]
+        print(f"  {sample['id']}  {sample['question_az']}")
+        print(f"     -> {sample['answer']}  (alias: {len(sample.get('answer_aliases', []))})")
+    return 0
+
+
 def _cmd_aliases(args: argparse.Namespace) -> int:
     records = [r for _, r in load_jsonl(args.path) if isinstance(r, dict)]
     updated, filled = fill_aliases(records, overwrite=args.overwrite)
@@ -731,6 +840,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_stats = sub.add_parser("stats", help="dataset statistikası")
     p_stats.add_argument("path", type=Path)
     p_stats.set_defaults(func=_cmd_stats)
+
+    p_prepare = sub.add_parser(
+        "prepare", help="əl ilə yazılmış sətirləri tam sxemə tamamla"
+    )
+    p_prepare.add_argument("path", type=Path)
+    p_prepare.add_argument("--out", type=Path, default=None)
+    p_prepare.add_argument("--start-id", type=int, default=1)
+    p_prepare.add_argument("--force", action="store_true", help="problemlərə baxmayaraq yaz")
+    p_prepare.set_defaults(func=_cmd_prepare)
 
     p_aliases = sub.add_parser("aliases", help="answer_aliases sahəsini avtomatik doldur")
     p_aliases.add_argument("path", type=Path)

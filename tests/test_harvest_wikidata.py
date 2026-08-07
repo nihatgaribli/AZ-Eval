@@ -339,7 +339,7 @@ def test_filter_stats_account_for_every_fetched_row():
     _, stats = apply_filters(rows)
     accounted = (
         stats.multi_valued + stats.blocked_answer + stats.bad_label
-        + stats.en_label_not_english + stats.answer_too_long
+        + stats.cyrillic_answer + stats.en_label_not_english + stats.answer_too_long
         + stats.answer_equals_subject + stats.answer_inside_subject
         + stats.over_quota + stats.kept
     )
@@ -453,3 +453,70 @@ def test_every_template_produces_valid_records(template):
     records = to_records(template, kept, start_id=1)
     report = validate_dataset(list(enumerate(records, start=1)))
     assert report.ok, [str(i) for i in report.errors]
+
+
+@pytest.mark.parametrize(
+    ("subject", "answer"),
+    [
+        ("Xocalı soyqırımı", "Xocalı rayonu"),
+        ("Gəncə üsyanı", "Gəncə şəhəri"),
+        ("Şəki xanlığı", "Şəki rayonu"),
+    ],
+)
+def test_partial_leak_through_the_leading_word_is_dropped(subject, answer):
+    """Cavabın aparıcı sözü subyektin adındadırsa, sual bilik ölçmür.
+
+    Tam ardıcıllıq yoxlaması bunu tutmur ("Xocalı rayonu" ≠ "Xocalı soyqırımı"),
+    amma modelin cavabı addan oxuması kifayətdir.
+    """
+    rows = [binding("Q1", subject, "Event", answer, "District")]
+    _, stats = apply_filters(rows)
+    assert stats.answer_inside_subject == 1
+    assert stats.kept == 0
+
+
+def test_unrelated_answers_are_not_treated_as_leaks():
+    rows = [binding("Q1", "Nizami Gəncəvi", "Nizami Ganjavi", "Gəncə", "Ganja")]
+    kept, stats = apply_filters(rows)
+    assert stats.answer_inside_subject == 0
+    assert len(kept) == 1
+
+
+@pytest.mark.parametrize(
+    "answer",
+    ["Ağqoyunlu hökmdarlarının siyahısı", "Bakı kateqoriyası", "Ölkə şablonu"],
+)
+def test_navigation_pages_are_not_accepted_as_answers(answer):
+    # Wikidata siyahı və kateqoriya səhifələrini adi obyekt kimi saxlayır və
+    # onlar xassə dəyəri kimi qayıda bilir, halbuki heç bir sualın cavabı deyil.
+    rows = [binding("Q1", "Sultan Rüstəm", "Sultan Rustam", answer, "A list")]
+    _, stats = apply_filters(rows)
+    assert stats.bad_label == 1
+
+
+def test_field_of_work_template_is_neutral_between_science_and_art():
+    # P101 rəssamlarda janr qaytarır ("peyzaj"); "elm sahəsi" ifadəsi onlara
+    # yanlış oturur, neytral "sahə" hər ikisinə uyğundur.
+    template = next(t for t in TEMPLATES if t.name == "az_field_of_work")
+    assert all("elm sahəsi" not in v.az for v in template.variants)
+
+
+@pytest.mark.parametrize("answer", ["Хабиби", "Мәскеу", "Низами"])
+def test_cyrillic_gold_answers_are_rejected(answer):
+    """Kiril etalon layihənin ƏSAS ölçməsini dağıdır.
+
+    Mərkəzi tapıntı odur ki, qazax dilinə köklənmiş model azərbaycanca kirillə
+    cavab verir. Etalonun özü kiril olsaydı, latınla düzgün cavab verən model
+    səhv sayılar, kirillə cavab verən isə bal alardı — effekt tərsinə görünərdi.
+    """
+    rows = [binding("Q1", "Həbibi", "Habibi", answer, "Habibi")]
+    _, stats = apply_filters(rows)
+    assert stats.cyrillic_answer == 1
+    assert stats.kept == 0
+
+
+def test_latin_azerbaijani_answers_are_kept():
+    rows = [binding("Q1", "Həbibi", "Habibi", "Şəki", "Sheki")]
+    kept, stats = apply_filters(rows)
+    assert stats.cyrillic_answer == 0
+    assert len(kept) == 1

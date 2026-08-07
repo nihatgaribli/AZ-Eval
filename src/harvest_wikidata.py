@@ -53,6 +53,7 @@ __all__ = [
     "SparqlError",
     "run_sparql",
     "harvest_template",
+    "POOL_PLACEHOLDER",
     "apply_filters",
     "to_records",
 ]
@@ -89,6 +90,11 @@ NON_ENGLISH_LETTERS = frozenset("əğışƏĞŞİ")
 #: Azərbaycan əlifbasına xas bütün hərflər (eyni etiket yoxlaması üçün).
 #: Baş `I` burada da yoxdur — eyni səbəbdən.
 AZ_LETTERS = frozenset("əğıöşüçƏĞİÖŞÜÇ")
+
+
+def _has_cyrillic(text: str) -> bool:
+    """Mətndə kiril hərfi varmı (Unicode diapazonuna görə)."""
+    return any("Ѐ" <= ch <= "ӿ" for ch in text)
 
 
 class SparqlError(RuntimeError):
@@ -180,6 +186,12 @@ class FactTemplate:
             english,
             index,
         )
+
+
+#: Şablon sorğusunda obyekt hovuzunun yerini tutan nişan. `harvest_template`
+#: onu icra anında `VALUES ?subj { wd:Q1 wd:Q2 ... }` ilə əvəz edir — hovuz
+#: şablon tərifi vaxtı deyil, yalnız qaçış vaxtı məlum olur.
+POOL_PLACEHOLDER = "#POOL#"
 
 
 def _query(
@@ -437,6 +449,300 @@ TEMPLATES: tuple[FactTemplate, ...] = (
             ),
         ),
     ),
+    # ======================================================================
+    # AZƏRBAYCAN MƏZMUNU — obyektlər az.wikipedia kurasiyasından
+    #
+    # Yuxarıdakı şablonlarda obyektləri `sitelinks >= 8` həddi seçirdi, yəni
+    # BEYNƏLXALQ populyarlıq. Nəticədə Fransanın paytaxtı və kimyəvi simvollar
+    # gəlirdi. "AZ-Eval" adlı dəst üçün bu, məzmun problemidir.
+    #
+    # Aşağıdakılar `#POOL#` nişanı daşıyır: sorğu yalnız `src.wikipedia_pool`
+    # tərəfindən qurulmuş obyektlərlə məhdudlaşır. Hovuza düşmək üçün məqalə ya
+    # az.wikipedia-da "Seçilmiş"/"Yaxşı" statusu almalı, ya da Azərbaycan mövzu
+    # kateqoriyasında olub 8 KB-dan böyük olmalıdır. Yəni obyekti azərbaycanlı
+    # redaktorlar seçir.
+    #
+    # Xassələr iki məqsədə görə seçilib:
+    #   yer/şəxs cavabları -> azərbaycan adları, diakritik sıxlığı yüksək,
+    #                         yəni əlifba effektini daha yaxşı ölçür
+    #   tarix cavabları    -> ümumi modelin asanlıqla bilmədiyi tarixi bilik,
+    #                         yəni tavan effekti olmur
+    # ======================================================================
+    FactTemplate(
+        name="az_inception",
+        category="history",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P571 ?date ; rdfs:label ?subjAz, ?subjEn .
+  BIND(STR(YEAR(?date)) AS ?ansAz) BIND(?ansAz AS ?ansEn) BIND(?subj AS ?ans)""",
+            400,
+            literal_answer=True,
+            single_value_filter=(
+                "  FILTER NOT EXISTS { ?subj wdt:P571 ?otherDate . "
+                "FILTER(YEAR(?otherDate) != YEAR(?date)) }\n"
+                # Eramızdan əvvəlki tarixlər "-246" kimi gəlir; bu, nə təbii
+                # cavabdır, nə də modeldən gözlənilən format.
+                "  FILTER(YEAR(?date) > 0)"
+            ),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant("{subject} hansı ildə yaranıb?",
+                            "In which year was {subject} founded?"),
+            QuestionVariant("{subject} neçənci ildə təsis edilib?",
+                            "What year was {subject} established?"),
+            QuestionVariant("{subject_gen} yaranma ili hansıdır?",
+                            "What is the year of foundation of {subject}?"),
+            QuestionVariant("{subject_gen} yarandığı ili yaz.",
+                            "Give the year {subject} was founded."),
+        ),
+    ),
+    FactTemplate(
+        name="az_person_birthplace",
+        category="culture",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P19 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            400,
+            single_value_filter=_only_one("P19"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant("{subject} harada anadan olub?",
+                            "Where was {subject} born?"),
+            QuestionVariant("{subject_gen} doğulduğu yer haradır?",
+                            "What is {subject}'s birthplace?"),
+            QuestionVariant("{subject} hansı yaşayış məntəqəsində dünyaya gəlib?",
+                            "In which settlement was {subject} born?"),
+            QuestionVariant("{subject_gen} doğum yerini yaz.",
+                            "Name the birthplace of {subject}."),
+        ),
+    ),
+    FactTemplate(
+        name="az_person_deathplace",
+        category="history",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P20 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            400,
+            single_value_filter=_only_one("P20"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant("{subject} harada vəfat edib?",
+                            "Where did {subject} die?"),
+            QuestionVariant("{subject_gen} vəfat etdiyi yer haradır?",
+                            "What is {subject}'s place of death?"),
+            QuestionVariant("{subject} hansı şəhərdə dünyasını dəyişib?",
+                            "In which city did {subject} pass away?"),
+            QuestionVariant("{subject_gen} vəfat yerini yaz.",
+                            "Name the place of death of {subject}."),
+        ),
+    ),
+    FactTemplate(
+        name="az_burial_place",
+        category="culture",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P119 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            400,
+            single_value_filter=_only_one("P119"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant("{subject} harada dəfn olunub?",
+                            "Where is {subject} buried?"),
+            QuestionVariant("{subject_gen} məzarı haradadır?",
+                            "Where is {subject}'s grave?"),
+            QuestionVariant("{subject} hansı yerdə torpağa tapşırılıb?",
+                            "In which place was {subject} laid to rest?"),
+            QuestionVariant("{subject_gen} dəfn yerini yaz.",
+                            "Name the burial place of {subject}."),
+        ),
+    ),
+    FactTemplate(
+        name="az_occupation",
+        category="culture",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P106 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P106"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject_gen} peşəsi nədir?',
+                            "What is {subject}'s occupation?"),
+            QuestionVariant('{subject} nə ilə məşğul olub?',
+                            'What did {subject} do for a living?'),
+            QuestionVariant('{subject} hansı sahədə fəaliyyət göstərib?',
+                            'In which field did {subject} work?'),
+            QuestionVariant('{subject_gen} fəaliyyət növünü yaz.',
+                            'Name the occupation of {subject}.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_writing_language",
+        category="language",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P1412 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P1412"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject} hansı dildə yazıb?',
+                            'In which language did {subject} write?'),
+            QuestionVariant('{subject_gen} əsərləri hansı dildədir?',
+                            "In which language are {subject}'s works?"),
+            QuestionVariant('{subject} hansı dildən istifadə edib?',
+                            'Which language did {subject} use?'),
+            QuestionVariant('{subject_gen} yazdığı dili yaz.',
+                            'Name the language {subject} wrote in.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_pseudonym",
+        category="language",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P742 ?pseudonym ; rdfs:label ?subjAz, ?subjEn .
+  BIND(STR(?pseudonym) AS ?ansAz) BIND(?ansAz AS ?ansEn) BIND(?subj AS ?ans)""",
+            500,
+            literal_answer=True,
+            single_value_filter=(
+                "  FILTER NOT EXISTS { ?subj wdt:P742 ?otherName . "
+                "FILTER(STR(?otherName) != STR(?pseudonym)) }"
+            ),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject_gen} təxəllüsü nədir?',
+                            "What is {subject}'s pen name?"),
+            QuestionVariant('{subject} hansı təxəllüslə tanınır?',
+                            'Under which pen name is {subject} known?'),
+            QuestionVariant('{subject_gen} ədəbi ləqəbi nədir?',
+                            "What is {subject}'s literary pseudonym?"),
+            QuestionVariant('{subject_gen} təxəllüsünü yaz.',
+                            'Name the pen name of {subject}.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_field_of_work",
+        category="science",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P101 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P101"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject} hansı sahə üzrə çalışıb?',
+                            'In which field did {subject} work?'),
+            QuestionVariant('{subject_gen} əsas fəaliyyət sahəsi hansıdır?',
+                            "What is {subject}'s main field?"),
+            QuestionVariant('{subject} hansı ixtisas üzrə çalışıb?',
+                            'In which speciality did {subject} work?'),
+            QuestionVariant('{subject_gen} fəaliyyət sahəsini yaz.',
+                            'Name the field of work of {subject}.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_educated_at",
+        category="science",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P69 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P69"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject} harada təhsil alıb?',
+                            'Where was {subject} educated?'),
+            QuestionVariant('{subject} hansı təhsil müəssisəsini bitirib?',
+                            'Which institution did {subject} graduate from?'),
+            QuestionVariant('{subject_gen} təhsil aldığı yer haradır?',
+                            "What is {subject}'s place of education?"),
+            QuestionVariant('{subject_gen} təhsil müəssisəsini yaz.',
+                            'Name where {subject} studied.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_award",
+        category="culture",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P166 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P166"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject} hansı mükafata layiq görülüb?',
+                            'Which award did {subject} receive?'),
+            QuestionVariant('{subject_gen} aldığı mükafat hansıdır?',
+                            'What award was {subject} given?'),
+            QuestionVariant('{subject} hansı fəxri adı daşıyır?',
+                            'Which honorary title does {subject} hold?'),
+            QuestionVariant('{subject_gen} mükafatını yaz.',
+                            'Name the award {subject} received.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_admin_unit",
+        category="geography",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P131 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P131"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject} hansı inzibati ərazidə yerləşir?',
+                            'In which administrative area is {subject} located?'),
+            QuestionVariant('{subject} hansı rayonun ərazisindədir?',
+                            'In which district is {subject}?'),
+            QuestionVariant('{subject_gen} aid olduğu inzibati vahid hansıdır?',
+                            'Which administrative unit does {subject} belong to?'),
+            QuestionVariant('{subject_gen} yerləşdiyi rayonu yaz.',
+                            'Name the district where {subject} is located.'),
+        ),
+    ),
+    FactTemplate(
+        name="az_position_held",
+        category="history",
+        sparql=_query(
+            """#POOL#
+  ?subj wdt:P39 ?ans ; rdfs:label ?subjAz, ?subjEn .
+  ?ans rdfs:label ?ansAz, ?ansEn .""",
+            500,
+            single_value_filter=_only_one("P39"),
+            min_sitelinks=0,
+        ),
+        variants=(
+            QuestionVariant('{subject} hansı vəzifəni tutub?',
+                            'Which position did {subject} hold?'),
+            QuestionVariant('{subject_gen} vəzifəsi nə olub?',
+                            "What was {subject}'s position?"),
+            QuestionVariant('{subject} hansı posta təyin edilib?',
+                            'To which post was {subject} appointed?'),
+            QuestionVariant('{subject_gen} vəzifəsini yaz.',
+                            'Name the position held by {subject}.'),
+        ),
+    ),
     FactTemplate(
         name="language_writing_system",
         category="language",
@@ -608,14 +914,25 @@ TEMPLATES: tuple[FactTemplate, ...] = (
 # --------------------------------------------------------------------------
 
 
-def run_sparql(query: str, retries: int = 4, timeout: int = 90) -> list[dict[str, Any]]:
+def run_sparql(query: str, retries: int = 4, timeout: int = 120) -> list[dict[str, Any]]:
     """SPARQL sorğusunu icra edir, 502/429 hallarında eksponensial gözləyir.
 
     Wikidata endpoint-i ağır sorğularda müntəzəm olaraq 502 qaytarır — bu,
     sorğunun səhv olduğu demək deyil, sadəcə vaxt limitinə dəyməsidir.
+
+    Sorğu POST ilə göndərilir. GET-də sorğu URL-in içinə düşür və uzun `VALUES`
+    bloku (yüzlərlə obyekt identifikatoru) URL uzunluğu həddini aşır.
     """
-    url = f"{ENDPOINT}?format=json&query={urllib.parse.quote(query)}"
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    request = urllib.request.Request(
+        ENDPOINT,
+        data=urllib.parse.urlencode({"query": query, "format": "json"}).encode("utf-8"),
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/sparql-results+json",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method="POST",
+    )
 
     last_error: Exception | None = None
     for attempt in range(retries):
@@ -645,6 +962,7 @@ class FilterStats:
     multi_valued: int = 0
     blocked_answer: int = 0
     bad_label: int = 0
+    cyrillic_answer: int = 0
     en_label_not_english: int = 0
     answer_too_long: int = 0
     answer_equals_subject: int = 0
@@ -658,6 +976,7 @@ class FilterStats:
             "çoxdəyərli_subyekt": self.multi_valued,
             "bloklanmış_cavab": self.blocked_answer,
             "yararsız_etiket": self.bad_label,
+            "kiril_cavab": self.cyrillic_answer,
             "EN_ingilis_deyil": self.en_label_not_english,
             "cavab_çox_uzun": self.answer_too_long,
             "cavab=subyekt": self.answer_equals_subject,
@@ -671,11 +990,19 @@ def _value(binding: dict[str, Any], key: str) -> str:
     return binding.get(key, {}).get("value", "").strip()
 
 
+#: Cavab ola bilməyən etiket sonluqları. Wikidata-da naviqasiya məqalələri
+#: ("Ağqoyunlu hökmdarlarının siyahısı") adi obyekt kimi saxlanılır və xassə
+#: dəyəri kimi qayıda bilir, halbuki heç bir sualın cavabı deyil.
+NON_ANSWER_SUFFIXES = ("siyahısı", "kateqoriyası", "şablonu")
+
+
 def _label_is_usable(label: str) -> bool:
-    """Mötərizəli dəqiqləşdirmə, boş və ya Q-id şəklində etiketlər yaramır."""
+    """Mötərizəli dəqiqləşdirmə, boş, Q-id və siyahı etiketləri yaramır."""
     if not label or "(" in label or ")" in label:
         return False
     if label.startswith("Q") and label[1:].isdigit():
+        return False
+    if label.endswith(NON_ANSWER_SUFFIXES):
         return False
     return len(label) <= 60
 
@@ -719,6 +1046,13 @@ def apply_filters(
         if not all(map(_label_is_usable, (subject_az, subject_en, answer_az, answer_en))):
             stats.bad_label += 1
             continue
+        # KİRİL ETALON QADAĞANDIR. Wikidata-da bəzi azərbaycanca dəyərlər hələ
+        # kiril qrafikasında saxlanılır ("Хабиби"). Belə etalon layihənin əsas
+        # ölçməsini dağıdır: latınla düzgün cavab verən model səhv sayılar və
+        # əlifba effekti tərsinə görünərdi.
+        if _has_cyrillic(answer_az) or _has_cyrillic(subject_az):
+            stats.cyrillic_answer += 1
+            continue
         if not _is_really_english(subject_en, subject_az) or not _is_really_english(
             answer_en, answer_az
         ):
@@ -739,7 +1073,14 @@ def apply_filters(
         # yararsızdır.
         subject_tokens = tokenize(subject_az, STRICT)
         answer_tokens = tokenize(answer_az, STRICT)
-        if answer_tokens and contains_token_sequence(subject_tokens, answer_tokens):
+        leaked = answer_tokens and (
+            contains_token_sequence(subject_tokens, answer_tokens)
+            # Qismən sızma: cavabın APARICI sözü subyektin adındadırsa, cavabı
+            # addan oxumaq kifayətdir. "Xocalı soyqırımı" -> "Xocalı rayonu"
+            # tam ardıcıllıq deyil, amma bilik tələb etmir.
+            or answer_tokens[0] in subject_tokens
+        )
+        if leaked:
             stats.answer_inside_subject += 1
             continue
 
@@ -815,10 +1156,28 @@ def to_records(
 
 
 def harvest_template(
-    template: FactTemplate, max_per_answer: int = 3
+    template: FactTemplate,
+    max_per_answer: int = 3,
+    pool: Sequence[str] | None = None,
 ) -> tuple[list[dict[str, Any]], FilterStats]:
-    """Bir şablonu icra edib süzülmüş namizədləri qaytarır."""
-    bindings = run_sparql(template.sparql)
+    """Bir şablonu icra edib süzülmüş namizədləri qaytarır.
+
+    `pool` verilibsə və şablon `POOL_PLACEHOLDER` daşıyırsa, sorğu yalnız həmin
+    obyektlərlə məhdudlaşdırılır. Hovuz `src.wikipedia_pool` tərəfindən
+    az.wikipedia-nın kurasiyasından qurulur, yəni obyektləri beynəlxalq
+    populyarlıq yox, azərbaycanlı redaktorlar seçir.
+    """
+    query = template.sparql
+    if POOL_PLACEHOLDER in query:
+        if not pool:
+            raise ValueError(
+                f"`{template.name}` obyekt hovuzu tələb edir; "
+                "`python -m src.wikipedia_pool` ilə qur"
+            )
+        values = " ".join(f"wd:{qid}" for qid in pool)
+        query = query.replace(POOL_PLACEHOLDER, f"  VALUES ?subj {{ {values} }}")
+
+    bindings = run_sparql(query)
     return apply_filters(bindings, max_per_answer=max_per_answer)
 
 
@@ -854,6 +1213,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--start-id", type=int, default=1)
     parser.add_argument(
+        "--pool",
+        type=Path,
+        default=Path("data/raw/entity_pool.json"),
+        help="az.wikipedia kurasiyasından qurulmuş obyekt hovuzu",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true", help="fayla yazma, yalnız statistika göstər"
     )
     args = parser.parse_args(argv)
@@ -863,6 +1228,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Uyğun şablon tapılmadı.", file=sys.stderr)
         return 1
 
+    # Hovuz yalnız ona ehtiyacı olan şablon seçilibsə yüklənir.
+    pool_qids: list[str] | None = None
+    if any(POOL_PLACEHOLDER in t.sparql for t in selected):
+        from src.wikipedia_pool import load_pool
+
+        try:
+            pool = load_pool(args.pool)
+        except FileNotFoundError:
+            print(
+                f"Obyekt hovuzu tapılmadı: {args.pool}\n"
+                "Əvvəlcə `python -m src.wikipedia_pool` işlət.",
+                file=sys.stderr,
+            )
+            return 1
+        pool_qids = pool.qids
+        print(f"obyekt hovuzu: {len(pool_qids)} (az.wikipedia kurasiyası)")
+
     all_records: list[dict[str, Any]] = []
     next_id = args.start_id
 
@@ -870,7 +1252,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"\n== {template.name} ({template.category})")
         try:
             candidates, stats = harvest_template(
-                template, max_per_answer=args.max_per_answer
+                template, max_per_answer=args.max_per_answer, pool=pool_qids
             )
         except SparqlError as exc:
             print(f"   ATLANDI: {exc}", file=sys.stderr)
