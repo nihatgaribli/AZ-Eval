@@ -5,11 +5,11 @@ type: dataset
 authors:
   - family-names: Garibli
     given-names: Nihat
-    email: gariblinihat@bsu.edu.az
+    email: qaribli.nihat.nemat@bsu.edu.az
     affiliation: Baku State University
-repository-code: "https://github.com/nihatgaribli/az-eval"
+repository-code: "https://github.com/nihatgaribli/AZ-Eval"
 abstract: >-
-  An open parallel Azerbaijani-English benchmark of 96 human-verified
+  An open parallel Azerbaijani-English benchmark of 356 human-verified
   short-answer items, with an evaluation pipeline that separates knowledge
   from orthography through a chain of nested normalizations. Used to show
   that fine-tuning on Kazakh produces negative transfer to Azerbaijani,

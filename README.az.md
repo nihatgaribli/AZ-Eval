@@ -9,7 +9,7 @@ metriklər, model qaçışları, təhlil. Qalan iş datasetin əl ilə təsdiqid
 
 ```bash
 pip install -r requirements.txt
-python -m pytest          # 467 test
+python -m pytest          # 517 test
 ```
 
 Model qaçışları üçün əlavə: `pip install torch transformers` (yalnız
@@ -77,7 +77,7 @@ tərcümə keyfiyyətindən asılı olmur. Bu, maşın tərcüməsindən keyfiyy
 
 Hər `build` və `harvest` sonunda **`majority_baseline`** göstərilir: "həmişə ən çox
 rast gəlinən cavabı de" strategiyasının balı. 15%-i keçirsə, kvota sərtləşdirilməlidir.
-Cari yığımda: **2.1%**.
+Cari yığımda: **1.1%** (n=356).
 
 ### Sual quruluşlarının müxtəlifliyi
 
@@ -241,7 +241,7 @@ az-eval/
 ├── src/analyze.py            # cədvəllər, xəta taksonomiyası  ✓
 ├── results/raw_outputs/      # xam model cavabları (MÜTLƏQ saxlanılır)
 ├── results/tables/
-└── tests/                    # 467 test
+└── tests/                    # 517 test
 ```
 
 ## Qeyd (Windows)
