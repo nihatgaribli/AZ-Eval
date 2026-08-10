@@ -1,5 +1,10 @@
 # AZ-Eval
 
+[![tests](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml/badge.svg)](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Kod lisenziyası: MIT](https://img.shields.io/badge/kod%20lisenziyas%C4%B1-MIT-green.svg)](LICENSE)
+[![Data lisenziyası: CC BY 4.0](https://img.shields.io/badge/data%20lisenziyas%C4%B1-CC%20BY%204.0-lightgrey.svg)](LICENSE-DATA)
+
 Azərbaycan dili üçün açıq LLM qiymətləndirmə dəsti. İngiliscə sənədləşdirmə və tam nəticələr: [README.md](README.md).
 
 **Status:** bütün boru xətti hazırdır və test olunub — yığım, əl yoxlaması,
