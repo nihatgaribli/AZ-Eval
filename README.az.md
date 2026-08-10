@@ -1,6 +1,6 @@
 # AZ-Eval
 
-Azərbaycan dili üçün açıq LLM qiymətləndirmə dəsti. Tam spesifikasiya: [BRIEF.md](BRIEF.md).
+Azərbaycan dili üçün açıq LLM qiymətləndirmə dəsti. İngiliscə sənədləşdirmə və tam nəticələr: [README.md](README.md).
 
 **Status:** bütün boru xətti hazırdır və test olunub — yığım, əl yoxlaması,
 metriklər, model qaçışları, təhlil. Qalan iş datasetin əl ilə təsdiqidir.
