@@ -225,7 +225,12 @@ def _align_bitsandbytes_cuda_version() -> str | None:
     if os.environ.get("BNB_CUDA_VERSION"):
         return None
 
-    import torch
+    # PyTorch opsional asılılıqdır (yalnız `--backend transformers` üçün lazımdır).
+    # Quraşdırılmayıbsa, uyğunlaşdırılacaq bir şey yoxdur.
+    try:
+        import torch
+    except ImportError:
+        return None
 
     cuda_version = (torch.version.cuda or "").replace(".", "")
     if not cuda_version:
