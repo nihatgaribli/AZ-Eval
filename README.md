@@ -1,5 +1,10 @@
 # AZ-Eval
 
+[![tests](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml/badge.svg)](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code license: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
+[![Data license: CC BY 4.0](https://img.shields.io/badge/data%20license-CC%20BY%204.0-lightgrey.svg)](LICENSE-DATA)
+
 An open parallel Azerbaijani–English benchmark for evaluating multilingual language
 models, together with the evaluation pipeline that produced it.
 
