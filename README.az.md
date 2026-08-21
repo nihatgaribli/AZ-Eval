@@ -1,5 +1,6 @@
 # AZ-Eval
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22050776.svg)](https://doi.org/10.5281/zenodo.22050776)
 [![tests](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml/badge.svg)](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Kod lisenziyası: MIT](https://img.shields.io/badge/kod%20lisenziyas%C4%B1-MIT-green.svg)](LICENSE)
@@ -253,3 +254,10 @@ az-eval/
 
 Konsol cp1252-yə düşüb `ə` hərfində çökə bilər. CLI bunu özü həll edir; öz
 skriptlərini işlədəndə `PYTHONIOENCODING=utf-8` təyin et.
+
+## Sitat
+
+Zenodo-da arxivlənib; yuxarıdakı badge həmişə ən son versiyaya aparır. Hesabatdakı
+rəqəmlərin arxasındakı dəqiq versiyanı — v0.1.0, *n* = 356 — göstərmək üçün versiya
+DOI-sını işlət: [10.5281/zenodo.22050777](https://doi.org/10.5281/zenodo.22050777).
+Maşınla oxunan metadata [CITATION.cff](CITATION.cff) faylındadır.
