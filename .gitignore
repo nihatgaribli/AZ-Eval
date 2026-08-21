@@ -11,6 +11,10 @@ venv/
 *.log
 *.idx
 *.out
+# Beamer əlavə olaraq bunları da yaradır
+*.nav
+*.snm
+*.toc
 
 # Daxili sənədlər — repoya düşmür
 BRIEF.md
@@ -27,3 +31,6 @@ results/raw_outputs.bak_n96/
 
 # Daxili düzəliş hesabatı (müəllifin öz qeydləri)
 data/raw/DUZELIS_HESABATI.md
+
+# Çıxışın şəxsi hazırlıq qeydləri (vaxt bölgüsü, danışıq göstərişləri)
+talk/slides-plan.md
