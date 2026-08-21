@@ -1,6 +1,7 @@
 # AZ-Eval
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22050776.svg)](https://doi.org/10.5281/zenodo.22050776)
+[![HF Datasets](https://img.shields.io/badge/%F0%9F%A4%97%20Datasets-az--eval-yellow.svg)](https://huggingface.co/datasets/nihatgaribli/az-eval)
 [![tests](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml/badge.svg)](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Kod lisenziyası: MIT](https://img.shields.io/badge/kod%20lisenziyas%C4%B1-MIT-green.svg)](LICENSE)
@@ -254,6 +255,19 @@ az-eval/
 
 Konsol cp1252-yə düşüb `ə` hərfində çökə bilər. CLI bunu özü həll edir; öz
 skriptlərini işlədəndə `PYTHONIOENCODING=utf-8` təyin et.
+
+## Hugging Face
+
+Dataset Hub-da da var və bir sətirlə yüklənir:
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("nihatgaribli/az-eval", split="test")
+```
+
+Hub nüsxəsi ilə `data/az_eval_v0.jsonl` eyni 356 itemdir; qiymətləndirmə boru xətti və
+təhlil bu repo-dadır.
 
 ## Sitat
 
