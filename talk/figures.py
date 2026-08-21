@@ -108,7 +108,7 @@ def negative_transfer(path: Path) -> None:
     # Tapıntını qrafikin üstündə bir cümlə ilə göstər, dinləyici izahı
     # gözləmədən nəyə baxdığını bilsin.
     ax.annotate(
-        "same in English  ·  3× apart in Azerbaijani",
+        "1.1 points apart in English  ·  13.5 points apart in Azerbaijani",
         xy=(0.5, 1.04), xycoords="axes fraction", ha="center",
         fontsize=13, color=INK_SOFT,
     )
