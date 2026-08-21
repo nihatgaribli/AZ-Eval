@@ -1,6 +1,7 @@
 # AZ-Eval
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22050776.svg)](https://doi.org/10.5281/zenodo.22050776)
+[![HF Datasets](https://img.shields.io/badge/%F0%9F%A4%97%20Datasets-az--eval-yellow.svg)](https://huggingface.co/datasets/nihatgaribli/az-eval)
 [![tests](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml/badge.svg)](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code license: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
@@ -109,6 +110,17 @@ Full tables: [`results/tables/`](results/tables/). Raw model outputs:
 
 `data/az_eval_v0.jsonl` — 356 human-verified short-answer items, each stated in parallel
 Azerbaijani and English.
+
+The set is also on the Hugging Face Hub, where it loads in one line:
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("nihatgaribli/az-eval", split="test")
+```
+
+The Hub copy and `data/az_eval_v0.jsonl` are the same 356 items; this repository holds the
+evaluation harness and the analysis that go with them.
 
 ```json
 {"id": "az-001",
