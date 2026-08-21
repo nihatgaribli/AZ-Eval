@@ -1,5 +1,6 @@
 # AZ-Eval
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22050776.svg)](https://doi.org/10.5281/zenodo.22050776)
 [![tests](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml/badge.svg)](https://github.com/nihatgaribli/AZ-Eval/actions/workflows/tests.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code license: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
@@ -262,6 +263,25 @@ fail that test regardless of which position one takes.
 - **Suffix stripping is a heuristic, not a morphological analyzer.** Its documented
   failures are asserted in `tests/test_metrics.py::test_known_stripping_limitations`
   rather than hidden.
+
+## Citing
+
+Archived on Zenodo; the badge above resolves to the latest version. To cite the exact
+revision behind the reported numbers — v0.1.0, *n* = 356 — use the version DOI
+[10.5281/zenodo.22050777](https://doi.org/10.5281/zenodo.22050777).
+Machine-readable metadata is in [CITATION.cff](CITATION.cff).
+
+```bibtex
+@dataset{garibli_2026_azeval,
+  author    = {Garibli, Nihat},
+  title     = {AZ-Eval: a parallel Azerbaijani--English benchmark},
+  year      = {2026},
+  publisher = {Zenodo},
+  version   = {v0.1.0},
+  doi       = {10.5281/zenodo.22050777},
+  url       = {https://doi.org/10.5281/zenodo.22050777}
+}
+```
 
 ## License
 

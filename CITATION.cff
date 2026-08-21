@@ -8,6 +8,8 @@ authors:
     email: qaribli.nihat.nemat@bsu.edu.az
     affiliation: Baku State University
 repository-code: "https://github.com/nihatgaribli/AZ-Eval"
+doi: 10.5281/zenodo.22050776
+version: v0.1.0
 abstract: >-
   An open parallel Azerbaijani-English benchmark of 356 human-verified
   short-answer items, with an evaluation pipeline that separates knowledge
@@ -22,4 +24,11 @@ keywords:
   - writing systems
   - large language models
 license: CC-BY-4.0
-date-released: "2026-08-07"
+date-released: "2026-08-21"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22050777
+    description: "The exact version behind the reported numbers (v0.1.0, n = 356)"
+  - type: doi
+    value: 10.5281/zenodo.22050776
+    description: "Concept DOI — always resolves to the latest version"
