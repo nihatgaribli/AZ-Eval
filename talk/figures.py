@@ -66,7 +66,7 @@ def negative_transfer(path: Path) -> None:
     sütunda bu asimmetriya bir baxışda görünür; iki ayrı qrafikdə görünməz.
     """
     labels = ["Azerbaijani", "English"]
-    base = [16.6, 30.6]
+    base = [12.6, 29.5]
     tuned = [3.1, 29.5]
 
     fig, ax = plt.subplots(figsize=(9, 4.6))
@@ -101,14 +101,14 @@ def negative_transfer(path: Path) -> None:
 
     ax.legend(
         [_swatch(BLUE), _swatch(ORANGE)],
-        ["Qwen3-VL-4B-Instruct  (base)", "Qolda-AVL-5B  (Kazakh-tuned)"],
+        ["Qwen3-VL-4B-Thinking  (declared base)", "Qolda-AVL-5B  (Kazakh-tuned)"],
         frameon=False, fontsize=12, loc="upper left", labelcolor=INK_SOFT,
     )
 
     # Tapıntını qrafikin üstündə bir cümlə ilə göstər, dinləyici izahı
     # gözləmədən nəyə baxdığını bilsin.
     ax.annotate(
-        "1.1 points apart in English  ·  13.5 points apart in Azerbaijani",
+        "level in English  ·  9.6 points apart in Azerbaijani",
         xy=(0.5, 1.04), xycoords="axes fraction", ha="center",
         fontsize=13, color=INK_SOFT,
     )

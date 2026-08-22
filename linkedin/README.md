@@ -27,10 +27,10 @@ there rather than editing the PNGs, so the talk and the post stay in sync.
 
 | Claim in the post | Source |
 |---|---|
-| 3.1% vs 16.6% on Azerbaijani, Holm *p* = 0.0024 | `results/tables/rq2.md`, strict |
-| 59.4% vs 59.4% in English, *p* = 1.0000 | `results/tables/control.md`, control stratum, *n* = 96 |
-| 35.4 points apart in Azerbaijani | `results/tables/control.md`, strict |
-| 326 of 356 answers in Cyrillic (1 of 356 for the base) | script table in the root [`README.md`](../README.md), computed from `results/raw_outputs/` |
+| 3.1% vs 12.6% on Azerbaijani, Holm *p* = 0.0040 | `results/tables/rq2.md`, strict, vs `Qwen3-VL-4B-Thinking` |
+| 62.5% vs 59.4% in English, *p* = 0.5892 | `results/tables/control.md`, control stratum, *n* = 96 |
+| 27.1 points apart in Azerbaijani | `results/tables/control.md`, strict |
+| 326 of 356 answers in Cyrillic (0 of 356 for the declared base) | script table in the root [`README.md`](../README.md), computed from `results/raw_outputs/` |
 | 12 of 326 moved by demanding the Latin alphabet | same table |
 
 Every figure quoted is Holm-corrected across the comparison family it belongs to; the

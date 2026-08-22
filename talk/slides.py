@@ -138,9 +138,10 @@ MAIN: list[Slide] = [
         table=(
             ["Model", "AZ", "EN", "Gap", "p (Holm)"],
             [
-                ["Qwen3-1.7B", "5.9%", "23.6%", "17.7", "0.0016"],
-                ["Qwen3-VL-4B-Instruct", "16.6%", "30.6%", "14.0", "0.0016"],
-                ["issai/Qolda-AVL-5B", "3.1%", "29.5%", "26.4", "0.0016"],
+                ["Qwen3-1.7B", "5.9%", "23.6%", "17.7", "0.0020"],
+                ["Qwen3-VL-4B-Instruct", "16.6%", "30.6%", "14.0", "0.0020"],
+                ["Qwen3-VL-4B-Thinking", "12.6%", "29.5%", "16.9", "0.0020"],
+                ["issai/Qolda-AVL-5B", "3.1%", "29.5%", "26.4", "0.0020"],
             ],
         ),
         punch="Majority-class baseline: 1.1%",
@@ -152,7 +153,7 @@ MAIN: list[Slide] = [
     Slide(
         title="Result 2: transfer is NEGATIVE",
         image="fig_negative_transfer.png",
-        punch="Holm-corrected p = 0.0024   ·   same architecture, same quantization, same prompt",
+        punch="Holm-corrected p = 0.0040   ·   its own declared base, same quantization, same prompt",
         notes=(
             "Stop here. This is the centre of the talk. Do not rush. "
             "The only difference between the two models is the Kazakh fine-tune."
@@ -163,7 +164,7 @@ MAIN: list[Slide] = [
         image="fig_script_counts.png",
         punch="Understands the question, finds the answer, writes it in the wrong alphabet.",
         notes=(
-            "The memorable moment of the talk. Slow down. Two sentences: 326 vs 1 is a "
+            "The memorable moment of the talk. Slow down. Two sentences: 326 vs 0 is a "
             "direct count, it depends on no statistical test. And demanding the Latin "
             "alphabet in the prompt moves only 12 of the 326."
         ),
@@ -176,11 +177,12 @@ MAIN: list[Slide] = [
         table=(
             ["Language", "Base model", "Kazakh-tuned", "Gap", "p (Holm)"],
             [
-                ["English", "59.4%", "59.4%", "0.0", "1.0000"],
-                ["Azerbaijani (STRICT)", "45.8%", "10.4%", "35.4", "0.0030"],
+                ["English", "62.5%", "59.4%", "3.1", "1.0000"],
+                ["Azerbaijani (STRICT)", "37.5%", "10.4%", "27.1", "0.0050"],
+                ["Azerbaijani (TRANSLIT)", "38.5%", "33.3%", "5.2", "1.0000"],
             ],
         ),
-        punch="Indistinguishable in English. 35.4 points apart in Azerbaijani.",
+        punch="Indistinguishable in English. 27.1 points apart in Azerbaijani - and transliteration closes it.",
         notes=(
             "A weaker model would be weaker in both languages. This one is weaker "
             "only in Azerbaijani. Raise the objection before the audience does."
