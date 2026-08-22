@@ -8,13 +8,13 @@ Fine-tuning a model on the closest well-resourced relative of your language can 
 
 I built AZ-Eval to check a simple assumption. Azerbaijani has almost no open evaluation data. Kazakh — its closest well-resourced Turkic relative — has plenty. So: does adapting a model to Kazakh carry over?
 
-It does not. Qolda-AVL-5B, fine-tuned on Kazakh, scores **3.1%** on Azerbaijani. The same 4B model without that adaptation, Qwen3-VL-4B-Instruct, scores **16.6%**. Holm-corrected p = 0.0024.
+It does not. Qolda-AVL-5B, fine-tuned on Kazakh, scores **3.1%** on Azerbaijani. The model it declares as its base, Qwen3-VL-4B-Thinking, scores **12.6%**. Holm-corrected p = 0.0040.
 
-The obvious objection is that one model is simply weaker. So I built a control stratum of facts every model should know. There, in **English**, the two are statistically identical: 59.4% versus 59.4%, p = 1.0000. In **Azerbaijani**, on those same items, they are 35.4 points apart.
+The obvious objection is that one model is simply weaker. So I built a control stratum of facts every model should know. There, in **English**, the two are statistically indistinguishable: 62.5% versus 59.4%, p = 0.5892. In **Azerbaijani**, on those same items, they are 27.1 points apart.
 
 Same model family. Same parameter count. Same quantization. Indistinguishable in English. Not a capability gap.
 
-The mechanism turned out to be the alphabet. **326 of 356** Azerbaijani answers came back in Cyrillic — several in Kazakh outright. For the base model: 1 of 356. Asking explicitly for the Latin alphabet moved 12 of them. Transliterating the outputs recovers most of the deficit, though not all of it.
+The mechanism turned out to be the alphabet. **326 of 356** Azerbaijani answers came back in Cyrillic — several in Kazakh outright. For the base model: **zero**. Asking explicitly for the Latin alphabet moved 12 of them. Transliterating the outputs closes the gap until it is no longer distinguishable from zero.
 
 The model did not lose the knowledge. It lost the script.
 

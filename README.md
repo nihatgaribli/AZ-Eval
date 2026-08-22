@@ -12,15 +12,15 @@ models, together with the evaluation pipeline that produced it.
 
 > **Headline finding.** Fine-tuning on Kazakh, the closest well-resourced Turkic
 > relative of Azerbaijani, produces *negative* transfer: `issai/Qolda-AVL-5B` scores
-> **3.1%** exact match on Azerbaijani against **16.6%** for
-> `Qwen/Qwen3-VL-4B-Instruct`, the same 4B Qwen3-VL model without the Kazakh
-> adaptation (Holm-corrected *p* = 0.0024). On the items both models
-> demonstrably know in English the two are **indistinguishable in English** (59.4% vs
-> 59.4%, *p* = 1.0000) yet **35.4 points apart in Azerbaijani**, so the loss cannot be a
-> general capability difference. The mechanism is largely orthographic — **326 of 356**
-> Azerbaijani answers come back in Cyrillic, several in Kazakh outright, against **1 of
-> 356** for the base model. Transliteration recovers most of the deficit but not all of
-> it: the model keeps much of the knowledge and loses the script.
+> **3.1%** exact match on Azerbaijani against **12.6%** for
+> `Qwen/Qwen3-VL-4B-Thinking`, the model it declares as its base (Holm-corrected
+> *p* = 0.0040). On the items both models demonstrably know in English the two are
+> **indistinguishable in English** (62.5% vs 59.4%, *p* = 0.5892) yet **27.1 points
+> apart in Azerbaijani**, so the loss cannot be a general capability difference. The
+> mechanism is orthographic — **326 of 356** Azerbaijani answers come back in Cyrillic,
+> several in Kazakh outright, against **0 of 356** for the base. Transliterating the
+> answers closes the gap until it is no longer distinguishable from zero: the model
+> keeps the knowledge and loses the script.
 
 Azerbaijani is a Turkic language written in Latin script. To our knowledge no open
 parallel evaluation set for it existed before this one.
@@ -40,19 +40,32 @@ Majority-class baseline: **1.1%**.
 
 | Model | AZ | EN | Gap | *p* (Holm) |
 |---|---|---|---|---|
-| `Qwen/Qwen3-1.7B` | 5.9% | 23.6% | 17.7 pt | 0.0016 |
-| `Qwen/Qwen3-VL-4B-Instruct` | 16.6% | 30.6% | 14.0 pt | 0.0016 |
-| `issai/Qolda-AVL-5B` | 3.1% | 29.5% | 26.4 pt | 0.0016 |
+| `Qwen/Qwen3-1.7B` | 5.9% | 23.6% | 17.7 pt | 0.0020 |
+| `Qwen/Qwen3-VL-4B-Instruct` | 16.6% | 30.6% | 14.0 pt | 0.0020 |
+| `Qwen/Qwen3-VL-4B-Thinking` | 12.6% | 29.5% | 16.9 pt | 0.0020 |
+| `issai/Qolda-AVL-5B` | 3.1% | 29.5% | 26.4 pt | 0.0020 |
 
-### Kazakh-tuned model vs its unadapted sibling
+### Kazakh-tuned model vs its declared base
 
-| Normalization | Base | Kazakh-tuned | Gap | *p* (Holm) |
+`Qolda-AVL-5B` names `Qwen/Qwen3-VL-4B-Thinking` as its base model, so that is the
+comparison reported here.
+
+| Normalization | Base (`Thinking`) | Kazakh-tuned | Gap | *p* (Holm) |
 |---|---|---|---|---|
-| `STRICT` | 16.6% | 3.1% | 13.5 pt | **0.0024** |
-| `TRANSLIT` | 18.0% | 12.1% | 5.9 pt | **0.0364** |
+| `STRICT` | 12.6% | 3.1% | 9.6 pt | **0.0040** |
+| `LENIENT` | 13.5% | 3.1% | 10.4 pt | **0.0040** |
+| `TRANSLIT` | 13.5% | 12.1% | 1.4 pt | 1.0000 |
 
-Transliteration removes **56%** of the deficit. The remainder stays significant, so
-script is the largest single cause but not the only one.
+Transliteration is the single stage that matters. Morphology and diacritics together
+move the gap by less than a point; transliterating the outputs removes **85%** of the
+strict deficit and **87%** of the lenient one, and what remains — 1.4 points — is not
+distinguishable from zero. On this benchmark the loss is orthographic, not epistemic.
+
+The instruction-tuned sibling `Qwen3-VL-4B-Instruct` was evaluated as well. It scores
+higher in Azerbaijani (16.6%), so reporting it as the baseline would *overstate* the
+deficit; the two are statistically indistinguishable on the control stratum in both
+languages (*p* = 0.4516 English, *p* = 0.0918 Azerbaijani), so the choice of sibling
+does not drive the result either way.
 
 ### The same comparison on the control stratum
 
@@ -60,21 +73,21 @@ The 96 `world` and `science` items are facts every model demonstrably knows in E
 Restricting to them removes the Azerbaijan-specific questions that neither model can
 answer, and the contrast sharpens:
 
-| Language | Base | Kazakh-tuned | Gap | *p* (Holm) |
+| Language | Base (`Thinking`) | Kazakh-tuned | Gap | *p* (Holm) |
 |---|---|---|---|---|
-| **English** | 59.4% | 59.4% | **0.0 pt** | 1.0000 |
-| Azerbaijani, `STRICT` | 45.8% | 10.4% | **35.4 pt** | **0.0030** |
-| Azerbaijani, `TRANSLIT` | 46.9% | 33.3% | 13.5 pt | 0.2831 |
+| **English** | 62.5% | 59.4% | 3.1 pt | 1.0000 |
+| Azerbaijani, `STRICT` | 37.5% | 10.4% | **27.1 pt** | **0.0050** |
+| Azerbaijani, `TRANSLIT` | 38.5% | 33.3% | 5.2 pt | 1.0000 |
 
 The English row is the point. The two models are statistically **indistinguishable** in
-English, so the 35.4-point Azerbaijani gap cannot come from a general capability
-difference. Transliteration recovers 62% of it.
+English, so the 27.1-point Azerbaijani gap cannot come from a general capability
+difference. Transliteration removes 81% of it, and the remainder does not survive as a
+detectable effect.
 
-The aggregate table above is reported as primary anyway: at *n* = 96 within a 30-test
-family the transliterated row does not survive Holm correction, and only the full sample
-has the power to show that the post-transliteration residual is non-zero. The two tables
-answer different questions — how large is the effect, and is anything left after
-transliteration. Table: [`results/tables/control.md`](results/tables/control.md).
+The full sample is reported alongside because the two answer different questions — how
+large the effect is on the whole set, and how large it is once the items neither model
+knows are removed. Both agree on the shape: a large strict gap that transliteration
+closes. Table: [`results/tables/control.md`](results/tables/control.md).
 
 ### Script of the produced answers (Azerbaijani prompts)
 
@@ -82,7 +95,8 @@ transliteration. Table: [`results/tables/control.md`](results/tables/control.md)
 |---|---|---|---|
 | `Qolda-AVL-5B` | **326** | 30 | 0 |
 | `Qolda-AVL-5B`, Latin script explicitly requested | **314** | 42 | 0 |
-| `Qwen3-VL-4B-Instruct` (base) | **1** | 355 | 0 |
+| `Qwen3-VL-4B-Thinking` (declared base) | **0** | 356 | 0 |
+| `Qwen3-VL-4B-Instruct` (sibling) | **1** | 355 | 0 |
 | `Qolda-AVL-5B`, English prompts | 0 | 356 | 0 |
 
 Demanding the Latin alphabet in the prompt moves 12 of 326 answers. The behaviour is
@@ -265,16 +279,15 @@ fail that test regardless of which position one takes.
 
 - **n = 356.** Confidence intervals are ±2–5 points. Every comparison reported above
   survives Holm correction.
-- **One model pair, and the pair is a sibling rather than the declared base.**
-  `Qolda-AVL-5B` names `Qwen/Qwen3-VL-4B-Thinking` as its base model; the comparison
-  here uses `Qwen/Qwen3-VL-4B-Instruct` — the same 4B Qwen3-VL model under a different
-  post-training. The control stratum shows the two are indistinguishable in English
-  (59.4% vs 59.4%, *p* = 1.0000), so the Azerbaijani gap is not a general capability
-  difference; but with the declared base unevaluated, the gap cannot yet be attributed
-  to the Kazakh adaptation alone rather than partly to the Instruct/Thinking difference.
-  Running `Qwen3-VL-4B-Thinking`, and a second Kazakh-adapted pair
-  (`issai/Qwen3.5-4B-Base-Kazakh` against `Qwen/Qwen3.5-4B-Base`), is the first item of
-  future work. The 9B/8B pair did not fit in 8 GB of VRAM.
+- **One adapted model.** The declared base and its instruction-tuned sibling are both
+  evaluated, and they agree, so the comparison itself is no longer the weak point. What
+  remains is that a single Kazakh-adapted model carries the causal claim. Whether the
+  effect is a property of Kazakh adaptation or of this particular fine-tune cannot be
+  settled from *n* = 1. A second pair — `issai/Qwen3.5-4B-Base-Kazakh` against
+  `Qwen/Qwen3.5-4B-Base` — would test replication, and a Latin-script Turkic adaptation
+  such as `ytu-ce-cosmos/Turkish-Llama-8b-Instruct` against its own base would separate
+  *language* from *script*. Neither has been run. The 9B/8B pairs did not fit in 8 GB of
+  VRAM.
 - **Two knowledge regimes are mixed, on purpose.** `world` and `science` items are facts
   every model demonstrably knows in English, so failure in Azerbaijani is a
   language-processing failure. `history` items are Azerbaijan-specific and score near
