@@ -12,8 +12,9 @@ models, together with the evaluation pipeline that produced it.
 
 > **Headline finding.** Fine-tuning on Kazakh, the closest well-resourced Turkic
 > relative of Azerbaijani, produces *negative* transfer: `issai/Qolda-AVL-5B` scores
-> **3.1%** exact match on Azerbaijani against **16.6%** for its own base model
-> `Qwen/Qwen3-VL-4B-Instruct` (Holm-corrected *p* = 0.0024). On the items both models
+> **3.1%** exact match on Azerbaijani against **16.6%** for
+> `Qwen/Qwen3-VL-4B-Instruct`, the same 4B Qwen3-VL model without the Kazakh
+> adaptation (Holm-corrected *p* = 0.0024). On the items both models
 > demonstrably know in English the two are **indistinguishable in English** (59.4% vs
 > 59.4%, *p* = 1.0000) yet **35.4 points apart in Azerbaijani**, so the loss cannot be a
 > general capability difference. The mechanism is largely orthographic — **326 of 356**
@@ -43,7 +44,7 @@ Majority-class baseline: **1.1%**.
 | `Qwen/Qwen3-VL-4B-Instruct` | 16.6% | 30.6% | 14.0 pt | 0.0016 |
 | `issai/Qolda-AVL-5B` | 3.1% | 29.5% | 26.4 pt | 0.0016 |
 
-### Kazakh-tuned model vs its own base
+### Kazakh-tuned model vs its unadapted sibling
 
 | Normalization | Base | Kazakh-tuned | Gap | *p* (Holm) |
 |---|---|---|---|---|
@@ -264,8 +265,16 @@ fail that test regardless of which position one takes.
 
 - **n = 356.** Confidence intervals are ±2–5 points. Every comparison reported above
   survives Holm correction.
-- **One model pair.** The controlled comparison rests on `Qolda-AVL-5B` against its own
-  base. The 9B/8B pair did not fit in 8 GB of VRAM.
+- **One model pair, and the pair is a sibling rather than the declared base.**
+  `Qolda-AVL-5B` names `Qwen/Qwen3-VL-4B-Thinking` as its base model; the comparison
+  here uses `Qwen/Qwen3-VL-4B-Instruct` — the same 4B Qwen3-VL model under a different
+  post-training. The control stratum shows the two are indistinguishable in English
+  (59.4% vs 59.4%, *p* = 1.0000), so the Azerbaijani gap is not a general capability
+  difference; but with the declared base unevaluated, the gap cannot yet be attributed
+  to the Kazakh adaptation alone rather than partly to the Instruct/Thinking difference.
+  Running `Qwen3-VL-4B-Thinking`, and a second Kazakh-adapted pair
+  (`issai/Qwen3.5-4B-Base-Kazakh` against `Qwen/Qwen3.5-4B-Base`), is the first item of
+  future work. The 9B/8B pair did not fit in 8 GB of VRAM.
 - **Two knowledge regimes are mixed, on purpose.** `world` and `science` items are facts
   every model demonstrably knows in English, so failure in Azerbaijani is a
   language-processing failure. `history` items are Azerbaijan-specific and score near
