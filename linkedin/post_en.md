@@ -8,7 +8,7 @@ Fine-tuning a model on the closest well-resourced relative of your language can 
 
 I built AZ-Eval to check a simple assumption. Azerbaijani has almost no open evaluation data. Kazakh — its closest well-resourced Turkic relative — has plenty. So: does adapting a model to Kazakh carry over?
 
-It does not. Qolda-AVL-5B, fine-tuned on Kazakh, scores **3.1%** on Azerbaijani. Its own base model, Qwen3-VL-4B-Instruct, scores **16.6%**. Holm-corrected p = 0.0024.
+It does not. Qolda-AVL-5B, fine-tuned on Kazakh, scores **3.1%** on Azerbaijani. The same 4B model without that adaptation, Qwen3-VL-4B-Instruct, scores **16.6%**. Holm-corrected p = 0.0024.
 
 The obvious objection is that one model is simply weaker. So I built a control stratum of facts every model should know. There, in **English**, the two are statistically identical: 59.4% versus 59.4%, p = 1.0000. In **Azerbaijani**, on those same items, they are 35.4 points apart.
 
